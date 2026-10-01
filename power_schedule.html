@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파워계획표 - 갓생 최적화 스케줄러</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Gaegu & Outfit & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;600;800;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        animeBg: '#0f0c20',
+                        animeCard: '#1a1636',
+                        animeBorder: '#2d255a',
+                        neonPink: '#ff2a85',
+                        neonPurple: '#a855f7',
+                        neonCyan: '#00f0ff',
+                        neonYellow: '#ffea00',
+                        neonGreen: '#00ff88',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        hand: ['Gaegu', 'cursive'],
+                        title: ['Outfit', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'pop': '4px 4px 0px #000000',
+                        'pop-lg': '6px 6px 0px #000000',
+                        'pop-pink': '5px 5px 0px #ff2a85',
+                        'pop-cyan': '5px 5px 0px #00f0ff',
+                        'pop-yellow': '5px 5px 0px #ffea00',
+                        'glow-pink': '0 0 15px rgba(255, 42, 133, 0.5)',
+                        'glow-cyan': '0 0 15px rgba(0, 240, 255, 0.5)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0d0a19;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(255, 42, 133, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(0, 240, 255, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #f3f4f6;
+        }
+
+        /* 만화 컷 느낌 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0a19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff2a85;
+            border-radius: 5px;
+            border: 2px solid #000;
+        }
+
+        .anime-card {
+            background: #181330;
+            border: 3px solid #000000;
+            box-shadow: 6px 6px 0px #000000;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .anime-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px #000000;
+        }
+
+        .anime-btn {
+            border: 3px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            transition: all 0.15s ease;
+            font-weight: 800;
+        }
+
+        .anime-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000000;
+        }
+
+        .anime-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000000;
+        }
+
+        .badge-sticker {
+            display: inline-block;
+            border: 2px solid #000000;
+            box-shadow: 3px 3px 0px #000000;
+            transform: rotate(-2deg);
+        }
+
+        .badge-sticker-rt {
+            display: inline-block;
+            border: 2px solid #000000;
+            box-shadow: 3px 3px 0px #000000;
+            transform: rotate(3deg);
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(1deg); }
+        }
+
+        .animate-float {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        /* 타임라인 블록 특수 스타일 */
+        .time-block {
+            border-left: 4px solid #000;
+            transition: all 0.2s;
+        }
+        .time-block:hover {
+            filter: brightness(1.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16 font-sans selection:bg-neonPink selection:text-white">
+
+    <!-- -->
+    <header class="sticky top-0 z-50 bg-animeBg/90 backdrop-blur-md border-b-4 border-black px-4 py-3">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-neonPink rounded-xl border-2 border-black shadow-pop flex items-center justify-center rotate-3">
+                    <i class="fa-solid fa-bolt text-yellow-300 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-title font-black text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-neonPurple to-neonCyan">
+                        POWER SCHEDULER
+                    </h1>
+                    <p class="text-xs font-bold text-gray-400 font-hand tracking-wider">- 벼락치기 맞춤형 갓생 플랫폼 -</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span class="badge-sticker bg-neonYellow text-black font-extrabold text-xs px-2.5 py-1 rounded">
+                    🔥 오늘만 살지 않는다
+                </span>
+                <button onclick="resetAllData()" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1.5 rounded-lg border-2 border-black shadow-pop">
+                    초기화
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- -->
+    <main class="max-w-5xl mx-auto px-4 mt-6">
+        <section class="anime-card bg-gradient-to-r from-purple-900/40 to-indigo-900/40 p-6 rounded-2xl mb-8 relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 text-9xl opacity-10 select-none font-black text-neonCyan">
+                ⚡
+            </div>
+            <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-block bg-neonCyan text-black font-extrabold text-xs px-3 py-1 rounded-full border-2 border-black mb-2 shadow-pop">
+                        선배의 직설 조언 💬
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-black text-white leading-tight">
+                        "야, 너 또 계획만 짜다 세월 다 보내지?" <br/>
+                        <span class="text-neonYellow">현실 가능한 플랜</span>만 짜준다. 딱 따라와.
+                    </h2>
+                    <p class="text-gray-300 text-sm mt-2 font-medium">
+                        의지만 앞서서 18시간 공부 플랜 짜고 폭망했던 내 과거를 담아 만들었음. 수면시간 챙기면서 합리적으로 물리치자.
+                    </p>
+                </div>
+                <div class="bg-black/40 p-4 rounded-xl border-2 border-neonPurple/50 w-full md:w-auto min-w-[220px]">
+                    <div class="text-xs text-gray-400 font-bold mb-1">🎯 오늘 나의 상태</div>
+                    <div id="quickStatus" class="text-sm font-bold text-neonGreen">
+                        "계획 작성 대기 중... 준비되면 드가자!"
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="flex overflow-x-auto gap-2 pb-3 mb-6 no-scrollbar">
+            <button onclick="switchTab('step1')" id="tab-step1" class="tab-btn anime-btn px-4 py-2 bg-neonPink text-white rounded-xl text-sm whitespace-nowrap flex items-center gap-2">
+                <span>1️⃣</span> 목표 & D-DAY
+            </button>
+            <button onclick="switchTab('step2')" id="tab-step2" class="tab-btn anime-btn px-4 py-2 bg-animeCard text-gray-300 rounded-xl text-sm whitespace-nowrap flex items-center gap-2">
+                <span>2️⃣</span> 수면 & 필수할일
+            </button>
+            <button onclick="switchTab('step3')" id="tab-step3" class="tab-btn anime-btn px-4 py-2 bg-animeCard text-gray-300 rounded-xl text-sm whitespace-nowrap flex items-center gap-2">
+                <span>3️⃣</span> 딴짓 & 휴식시간
+            </button>
+            <button onclick="switchTab('step4')" id="tab-step4" class="tab-btn anime-btn px-4 py-2 bg-animeCard text-gray-300 rounded-xl text-sm whitespace-nowrap flex items-center gap-2">
+                <span>4️⃣</span> 🔥 완성된 계획표
+            </button>
+            <button onclick="switchTab('step5')" id="tab-step5" class="tab-btn anime-btn px-4 py-2 bg-animeCard text-gray-300 rounded-xl text-sm whitespace-nowrap flex items-center gap-2">
+                <span>5️⃣</span> 🌙 꿀잠 골든타임
+            </button>
+        </div>
+
+        <!-- -->
+        <div id="content-step1" class="tab-content block">
+            <div class="anime-card p-6 rounded-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="badge-sticker bg-neonPink text-white font-black px-3 py-1 rounded-lg text-sm">STEP 1</span>
+                    <h3 class="text-xl font-black text-white">이번엔 진짜 목표가 뭔데?</h3>
+                </div>
+                
+                <p class="text-gray-400 text-sm mb-6">
+                    솔직히 말해봐. 내일 당장 시험이야, 아니면 자격증이야? 정확히 입력해야 과부하 안 걸리는 맞춤 타임라인이 나온다.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-extrabold text-neonCyan mb-2 uppercase">목표 명칭</label>
+                            <input type="text" id="goalTitle" placeholder="예: 중간고사 싹 다 씹어먹기, 토익 850, 수능 대박" 
+                                class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-3 text-white placeholder-gray-500 focus:border-neonPink focus:outline-none font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-neonCyan mb-2 uppercase">D-DAY 날짜</label>
+                            <input type="date" id="targetDate" 
+                                class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-3 text-white focus:border-neonPink focus:outline-none font-bold text-sm">
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-extrabold text-neonCyan mb-2 uppercase">나의 공부 스타일 (솔직히 체크해)</label>
+                            <select id="studyStyle" class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-3 text-white focus:border-neonPink focus:outline-none font-bold text-sm">
+                                <option value="night">🦉 새벽 감성 벼락치기형 (밤에 집중 터짐)</option>
+                                <option value="morning">🌅 아침 일찍 일어나는 부지런한 갓생러</option>
+                                <option value="pomodoro">⏱️ 25분 집중하고 5분 쉬어야 안 죽는 집중력 조루형</option>
+                                <option value="marathon">🐢 느려도 한 번 앉으면 3시간 몰입형</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-neonCyan mb-2 uppercase">멘탈 모드 설정</label>
+                            <select id="mentalMode" class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-3 text-white focus:border-neonPink focus:outline-none font-bold text-sm">
+                                <option value="sparta">🔥 매운맛 스파르타 (쉬는 시간 거의 없음)</option>
+                                <option value="balanced">⚖️ 인간다운 밸런스 (할 건 하고 쉴 건 쉼)</option>
+                                <option value="cozy">🍵 멘탈 보호 모드 (욕심 빼고 최소한만)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button onclick="switchTab('step2')" class="anime-btn bg-neonPink text-white px-6 py-3 rounded-xl text-sm flex items-center gap-2">
+                        다음: 수면 & 필수 할 일 설정 <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- -->
+        <div id="content-step2" class="tab-content hidden">
+            <div class="anime-card p-6 rounded-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="badge-sticker bg-neonPurple text-white font-black px-3 py-1 rounded-lg text-sm">STEP 2</span>
+                    <h3 class="text-xl font-black text-white">수면시간 & 진짜 해야 할 필수과제</h3>
+                </div>
+                
+                <p class="text-gray-400 text-sm mb-6">
+                    "하루 3시간 자고 15시간 공부할 건데요?" -> <strong class="text-neonYellow">응 너 이틀 뒤에 기절해.</strong> 인간적으로 사람답게 자면서 하자.
+                </p>
+
+                <!-- Sleep Config -->
+                <div class="bg-black/40 p-4 rounded-xl border-2 border-animeBorder mb-6">
+                    <h4 class="text-sm font-extrabold text-neonYellow mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-bed"></i> 원하는 수면 설정
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 font-bold">수면 시간 (시간)</label>
+                            <input type="number" id="sleepHours" value="7" min="4" max="10" 
+                                class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-2.5 text-white font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 font-bold">취침 예정 시간</label>
+                            <input type="time" id="bedTime" value="23:30" 
+                                class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-2.5 text-white font-bold text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mandatory Task List -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-sm font-extrabold text-neonCyan flex items-center gap-2">
+                            <i class="fa-solid fa-check-double"></i> 안 하면 시험/인생 망하는 할 일
+                        </h4>
+                        <button onclick="addTaskInput()" class="text-xs bg-neonPurple hover:bg-purple-600 text-white font-bold px-3 py-1.5 rounded-lg border-2 border-black shadow-pop">
+                            + 할 일 추가
+                        </button>
+                    </div>
+
+                    <div id="taskList" class="space-y-3">
+                        <!-- Dynamic items will be added here -->
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-between">
+                    <button onclick="switchTab('step1')" class="anime-btn bg-gray-700 text-white px-5 py-2.5 rounded-xl text-sm">
+                        이전
+                    </button>
+                    <button onclick="switchTab('step3')" class="anime-btn bg-neonPink text-white px-6 py-3 rounded-xl text-sm flex items-center gap-2">
+                        다음: 딴짓 & 숨 쉬는 시간 <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- -->
+        <div id="content-step3" class="tab-content hidden">
+            <div class="anime-card p-6 rounded-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="badge-sticker bg-neonYellow text-black font-black px-3 py-1 rounded-lg text-sm">STEP 3</span>
+                    <h3 class="text-xl font-black text-white">딴짓 & 합법적 숨 쉬는 시간</h3>
+                </div>
+                
+                <p class="text-gray-400 text-sm mb-6">
+                    어차피 공부하다가 인스타 릴스 보고 멍때릴 거 다 안다. 차라리 계획에 <strong>공식 휴식 타임</strong>으로 박아두고 죄책감 없이 쉬자.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-black/40 p-4 rounded-xl border-2 border-animeBorder">
+                        <label class="block text-xs font-bold text-neonGreen mb-2">🍚 식사 & 멍때리기</label>
+                        <select id="mealTime" class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-2.5 text-white font-bold text-sm">
+                            <option value="60">하루 총 1시간 (빛의 속도 혼밥)</option>
+                            <option value="90" selected>하루 총 1.5시간 (적당히 편하게)</option>
+                            <option value="120">하루 총 2시간 (맛있는 건 못 참지)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-black/40 p-4 rounded-xl border-2 border-animeBorder">
+                        <label class="block text-xs font-bold text-neonYellow mb-2">📱 유튜브 / SNS 힐링</label>
+                        <select id="snsTime" class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-2.5 text-white font-bold text-sm">
+                            <option value="30">30분 (최소 도파민 보충)</option>
+                            <option value="60" selected>1시간 (릴스 숏폼 몇 개만)</option>
+                            <option value="120">2시간 (폰 끊기 힘든 타입)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-black/40 p-4 rounded-xl border-2 border-animeBorder">
+                        <label class="block text-xs font-bold text-neonCyan mb-2">🏃 운동 / 산책 / 씻기</label>
+                        <select id="exerciseTime" class="w-full bg-black/60 border-2 border-animeBorder rounded-xl p-2.5 text-white font-bold text-sm">
+                            <option value="30">30분 (간단 샤워)</option>
+                            <option value="60" selected>1시간 (산책 + 샤워)</option>
+                            <option value="90">1.5시간 (오운완 헬스인)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-purple-950/40 p-4 rounded-xl border-2 border-neonPurple/40 mb-6 flex items-start gap-3">
+                    <div class="text-2xl">💡</div>
+                    <div class="text-xs text-gray-300 leading-relaxed">
+                        <strong class="text-white">선배의 팩트 폭격:</strong> <br/>
+                        휴식 시간을 계획표에 안 적어두면 '잠깐 폰 봐야지' 하다가 3시간 날아감. 차라리 딱 정해진 시간에만 몰아서 도파민을 채우는 게 훨씬 안전하다.
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-between">
+                    <button onclick="switchTab('step2')" class="anime-btn bg-gray-700 text-white px-5 py-2.5 rounded-xl text-sm">
+                        이전
+                    </button>
+                    <button onclick="generateScheduleAlgorithm()" class="anime-btn bg-gradient-to-r from-neonPink to-neonPurple text-white px-8 py-3.5 rounded-xl text-base shadow-glow-pink flex items-center gap-2">
+                        ⚡ 갓생 파워계획표 완성하기!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- -->
+        <div id="content-step4" class="tab-content hidden">
+            <div class="anime-card p-6 rounded-2xl mb-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                    <div>
+                        <span class="badge-sticker bg-neonGreen text-black font-black px-3 py-1 rounded-lg text-sm mb-2">STEP 4</span>
+                        <h3 class="text-2xl font-black text-white flex items-center gap-2">
+                            🔥 완성된 너의 24시간 파워 타임라인
+                        </h3>
+                        <p class="text-gray-400 text-xs mt-1" id="scheduleSummaryText">
+                            계획을 생성하는 중입니다...
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="askGeminiRefine()" class="anime-btn bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-neonYellow"></i> 선배 AI 코칭 받기
+                        </button>
+                        <button onclick="window.print()" class="anime-btn bg-gray-800 text-white px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-print"></i> 인쇄 / PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Advice Box (Dynamic) -->
+                <div id="aiAdviceBox" class="hidden mb-6 bg-indigo-950/70 border-2 border-neonCyan p-4 rounded-xl text-sm leading-relaxed text-gray-200">
+                    <div class="flex items-center gap-2 font-bold text-neonCyan mb-2">
+                        <i class="fa-solid fa-robot"></i> 과외 선배의 매운맛 솔루션:
+                    </div>
+                    <div id="aiAdviceContent" class="whitespace-pre-line text-xs font-medium">
+                        분석 중...
+                    </div>
+                </div>
+
+                <!-- 24H Timeline Canvas / List -->
+                <div class="space-y-3" id="timelineList">
+                    <!-- Dynamic timeline items generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- -->
+        <div id="content-step5" class="tab-content hidden">
+            <div class="anime-card p-6 rounded-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="badge-sticker bg-indigo-500 text-white font-black px-3 py-1 rounded-lg text-sm">STEP 5</span>
+                    <h3 class="text-xl font-black text-white">🌙 꿀잠 골든타임 & 수면 공략집</h3>
+                </div>
+                
+                <p class="text-gray-400 text-sm mb-6">
+                    공부 잘하는 애들의 진짜 비결? 잘 때 개운하게 자는 것. 뇌가 기억을 정돈하는 골든타임을 사수하자.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-black/40 p-5 rounded-xl border-2 border-animeBorder">
+                        <h4 class="text-base font-extrabold text-neonCyan mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-moon"></i> 90분 수면 주기 법칙
+                        </h4>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            사람의 렘수면 주기는 약 90분 단위로 움직임. <br/>
+                            따라서 <strong>6시간 / 7.5시간 / 9시간</strong> 단위로 잠을 자면 깰 때 머리가 띵하지 않고 아주 개운함! 4.5시간은 진짜 긴급 벼락치기용.
+                        </p>
+                    </div>
+
+                    <div class="bg-black/40 p-5 rounded-xl border-2 border-animeBorder">
+                        <h4 class="text-base font-extrabold text-neonYellow mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-mug-hot"></i> 카페인 컷오프 타임
+                        </h4>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            커피나 몬스터/핫식스의 카페인 반감기는 약 6시간.<br/>
+                            밤 11시에 잘 거면 <strong>최소 오후 5시 이후엔 카페인 금지!</strong> 자는 것 같아도 뇌가 깊은 수면에 못 들어감.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-neonPink/20 to-neonPurple/20 p-5 rounded-xl border-2 border-neonPink/50">
+                    <h4 class="text-sm font-extrabold text-white mb-2">⚡ 선배가 알려주는 벼락치기 당일 꿀팁</h4>
+                    <ul class="text-xs text-gray-300 space-y-2 list-disc list-inside">
+                        <li>자기 직전에 방금 외운 단어나 공식 마지막으로 3분만 딱 보고 자라. 자는 동안 뇌가 장기기억으로 꽂아줌.</li>
+                        <li>침대 누워서 폰으로 유튜브 쇼츠 보지 마라. 잔상 잔류해서 수면 질 박살남.</li>
+                        <li>알람은 방 건너편 책상 위에 둬라. 침대 옆에 두면 무조건 끄고 다시 자게 되어 있음.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- -->
+    <script>
+        // Default Tasks State
+        let defaultTasks = [
+            { name: "국어/영어 핵심 단어 & 암기", duration: 90, priority: "high" },
+            { name: "수학 문제집 20페이지 풀기", duration: 120, priority: "high" },
+            { name: "탐구영역 요약본 복습", duration: 60, priority: "medium" }
+        ];
+
+        window.onload = function() {
+            renderTaskList();
+            // Set default date to 7 days later
+            const today = new Date();
+            today.setDate(today.getDate() + 7);
+            document.getElementById('targetDate').value = today.toISOString().split('T')[0];
+        };
+
+        function switchTab(stepId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`content-${stepId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-neonPink', 'text-white');
+                btn.classList.add('bg-animeCard', 'text-gray-300');
+            });
+
+            const activeBtn = document.getElementById(`tab-${stepId}`);
+            activeBtn.classList.remove('bg-animeCard', 'text-gray-300');
+            activeBtn.classList.add('bg-neonPink', 'text-white');
+        }
+
+        function renderTaskList() {
+            const container = document.getElementById('taskList');
+            container.innerHTML = '';
+
+            defaultTasks.forEach((task, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2 bg-black/40 p-2.5 rounded-xl border-2 border-animeBorder';
+                item.innerHTML = `
+                    <input type="text" value="${task.name}" onchange="defaultTasks[${index}].name = this.value" 
+                        class="flex-1 bg-black/60 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-neonCyan">
+                    <select onchange="defaultTasks[${index}].duration = parseInt(this.value)" 
+                        class="bg-black/60 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white font-bold">
+                        <option value="30" ${task.duration == 30 ? 'selected' : ''}>30분</option>
+                        <option value="60" ${task.duration == 60 ? 'selected' : ''}>1시간</option>
+                        <option value="90" ${task.duration == 90 ? 'selected' : ''}>1.5시간</option>
+                        <option value="120" ${task.duration == 120 ? 'selected' : ''}>2시간</option>
+                        <option value="180" ${task.duration == 180 ? 'selected' : ''}>3시간</option>
+                    </select>
+                    <button onclick="removeTask(${index})" class="text-xs text-red-400 hover:text-red-300 px-2 py-1">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function addTaskInput() {
+            defaultTasks.push({ name: "새 할 일", duration: 60, priority: "medium" });
+            renderTaskList();
+        }
+
+        function removeTask(index) {
+            defaultTasks.splice(index, 1);
+            renderTaskList();
+        }
+
+        // Generate algorithmic schedule
+        function generateScheduleAlgorithm() {
+            switchTab('step4');
+
+            const goalTitle = document.getElementById('goalTitle').value || "갓생 무한 도주";
+            const bedTimeVal = document.getElementById('bedTime').value || "23:30";
+            const sleepHours = parseFloat(document.getElementById('sleepHours').value) || 7;
+            const studyStyle = document.getElementById('studyStyle').value;
+
+            const mealDuration = parseInt(document.getElementById('mealTime').value);
+            const snsDuration = parseInt(document.getElementById('snsTime').value);
+            const exerciseDuration = parseInt(document.getElementById('exerciseTime').value);
+
+            // Compute Sleep End
+            const [bedH, bedM] = bedTimeVal.split(':').map(Number);
+            let wakeH = (bedH + Math.floor(sleepHours)) % 24;
+            let wakeM = bedM + Math.round((sleepHours % 1) * 60);
+            if (wakeM >= 60) {
+                wakeH = (wakeH + 1) % 24;
+                wakeM -= 60;
+            }
+
+            const wakeTimeStr = `${String(wakeH).padStart(2, '0')}:${String(wakeM).padStart(2, '0')}`;
+
+            document.getElementById('quickStatus').innerText = `🔥 "${goalTitle}" 달성용 타임라인 생성 완료!`;
+            document.getElementById('scheduleSummaryText').innerText = 
+                `목표: ${goalTitle} | 수면: ${bedTimeVal} ~ ${wakeTimeStr} (${sleepHours}시간)`;
+
+            // Build Timeline List
+            const timelineList = document.getElementById('timelineList');
+            timelineList.innerHTML = '';
+
+            // Timeline Data Construct
+            let scheduleItems = [
+                { time: `${bedTimeVal} - ${wakeTimeStr}`, title: "🌙 꿀잠 타임 (기억 저장 & 뇌 휴식)", category: "sleep", color: "border-indigo-500 bg-indigo-950/40 text-indigo-300" },
+                { time: `${wakeTimeStr} - ${addMinutes(wakeTimeStr, 30)}`, title: "🌅 기상 & 세수 & 정신 차리기", category: "routine", color: "border-neonYellow bg-yellow-950/40 text-yellow-300" }
+            ];
+
+            let currentTime = addMinutes(wakeTimeStr, 30);
+
+            // Add tasks sequentially
+            defaultTasks.forEach((t, idx) => {
+                // Study Block
+                let nextTime = addMinutes(currentTime, t.duration);
+                scheduleItems.push({
+                    time: `${currentTime} - ${nextTime}`,
+                    title: `📖 [열공] ${t.name}`,
+                    category: "study",
+                    color: "border-neonPink bg-pink-950/40 text-pink-200 font-bold"
+                });
+                currentTime = nextTime;
+
+                // Rest block after each study
+                if (idx === 0) {
+                    let mealEnd = addMinutes(currentTime, mealDuration / 2);
+                    scheduleItems.push({
+                        time: `${currentTime} - ${mealEnd}`,
+                        title: "🍚 맛있는 식사 & 도파민 충전",
+                        category: "rest",
+                        color: "border-neonGreen bg-green-950/40 text-green-300"
+                    });
+                    currentTime = mealEnd;
+                } else if (idx === 1) {
+                    let snsEnd = addMinutes(currentTime, snsDuration);
+                    scheduleItems.push({
+                        time: `${currentTime} - ${snsEnd}`,
+                        title: "📱 합법적 유튜브/릴스 타임 (죄책감 zero)",
+                        category: "rest",
+                        color: "border-neonCyan bg-cyan-950/40 text-cyan-300"
+                    });
+                    currentTime = snsEnd;
+                }
+            });
+
+            // Exercise / Night Routine
+            let exerciseEnd = addMinutes(currentTime, exerciseDuration);
+            scheduleItems.push({
+                time: `${currentTime} - ${exerciseEnd}`,
+                title: "🏃 산책 / 운동 / 샤워 후 마무리 복습",
+                category: "routine",
+                color: "border-neonPurple bg-purple-950/40 text-purple-300"
+            });
+
+            scheduleItems.push({
+                time: `${exerciseEnd} - ${bedTimeVal}`,
+                title: "🍵 하루 마무리 및 내일 계획 3분 점검",
+                category: "routine",
+                color: "border-gray-500 bg-gray-900/40 text-gray-300"
+            });
+
+            // Render to HTML
+            scheduleItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `time-block p-4 rounded-xl border-l-8 ${item.color} flex flex-col md:flex-row justify-between items-start md:items-center gap-2 shadow-pop`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-title font-black text-sm tracking-wider px-2.5 py-1 bg-black/60 rounded-md border border-gray-700">${item.time}</span>
+                        <span class="text-sm font-extrabold">${item.title}</span>
+                    </div>
+                    <span class="text-xs opacity-75 font-hand font-bold">#파워플랜 사수</span>
+                `;
+                timelineList.appendChild(card);
+            });
+        }
+
+        function addMinutes(timeStr, mins) {
+            let [h, m] = timeStr.split(':').map(Number);
+            let totalM = h * 60 + m + mins;
+            let finalH = Math.floor(totalM / 60) % 24;
+            let finalM = totalM % 60;
+            return `${String(finalH).padStart(2, '0')}:${String(finalM).padStart(2, '0')}`;
+        }
+
+        async function askGeminiRefine() {
+            const adviceBox = document.getElementById('aiAdviceBox');
+            const adviceContent = document.getElementById('aiAdviceContent');
+            adviceBox.classList.remove('hidden');
+            adviceContent.innerText = "선배가 니 타임라인 스캔하는 중... 잠시만 기다려라 ⏳";
+
+            const goalTitle = document.getElementById('goalTitle').value || "시험 스퍼트";
+            const sleepHours = document.getElementById('sleepHours').value;
+            const tasksListText = defaultTasks.map(t => `${t.name}(${t.duration}분)`).join(', ');
+
+            const systemPrompt = "너는 뼈 때리는 조언을 잘해주지만 후배를 아끼는 친근하고 위트 있는 공부 고수 과외 선배야. 말투는 '~했냐?', '~해라', '~다' 식의 반말이고 절대 AI 로봇 같은 다정한 말투('안녕하세요~ 해드릴게요') 쓰지 마. 핵심만 3줄로 날카롭게 피드백해.";
+            const userQuery = `내 목표: ${goalTitle}, 수면시간: ${sleepHours}시간, 할일목록: ${tasksListText}. 이 플랜 어떤지 피드백해주고 현실적인 꿀팁 3줄로 적어줘.`;
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    adviceContent.innerText = text;
+                } else {
+                    adviceContent.innerText = "야, 수면시간이랑 할 일 밸런스 나쁘지 않다. 중간에 딴짓할 때 인스타 릴스만 끊어내면 승리함. 드가자!";
+                }
+            } catch (err) {
+                adviceContent.innerText = "선배 가이드: 수면시간 챙기면서 공부 과목 사이사이 10분 이상은 꼭 쉬어라. 안 그러면 밤에 뇌 정지 온다!";
+            }
+        }
+
+        function resetAllData() {
+            if(confirm("작성 중인 데이터 싹 지우고 초기화할까?")) {
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
